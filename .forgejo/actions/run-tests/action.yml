@@ -1,14 +1,13 @@
 name: Run tests with coverage
 description: Runs bashunit tests and enforces minimum coverage threshold
 
-inputs:
-  min-coverage:
-    description: Minimum coverage percentage (default: 60)
-    required: false
-    default: "60"
-
 runs:
   using: composite
+  inputs:
+    min-coverage:
+      description: Minimum coverage percentage (default: 60)
+      required: false
+      default: "60"
   steps:
     - name: Install bashunit
       shell: bash
