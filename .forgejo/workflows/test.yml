@@ -1,0 +1,22 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: codeberg-small
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run tests with coverage
+        uses: ./.forgejo/actions/run-tests
+        with:
+          min-coverage: 60

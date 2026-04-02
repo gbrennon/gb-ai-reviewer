@@ -1,0 +1,10 @@
+name: Install bashunit
+description: Installs the bashunit testing framework
+
+runs:
+  using: composite
+  steps:
+    - name: Install bashunit
+      shell: bash
+      run: |
+        curl -s https://bashunit.typeddevs.com/install.sh | bash
