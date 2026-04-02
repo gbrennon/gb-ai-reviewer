@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPTS_DIR=/home/gbrennon/Documents/repos/gbrennon/ai-review-template/scripts
+SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../scripts" && pwd)"
 
 source "$SCRIPTS_DIR/lib/check-env.sh"
 
