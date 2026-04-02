@@ -1,0 +1,19 @@
+name: Setup bashunit env
+description: Creates a .env file with BASHUNIT_ARGS for bashunit
+
+inputs:
+  args:
+    description: Arguments to pass to bashunit
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Create .env file
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.args }}" ]; then
+          echo "BASHUNIT_ARGS=${{ inputs.args }}" > .env
+        fi
+        cat .env
