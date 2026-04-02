@@ -1,12 +1,6 @@
 name: Run tests with coverage
 description: Runs bashunit tests and enforces minimum coverage threshold
 
-inputs:
-  min-coverage:
-    description: Minimum coverage percentage (default: 60)
-    required: false
-    default: "60"
-
 runs:
   using: composite
   steps:
@@ -18,7 +12,7 @@ runs:
     - name: Run tests with coverage
       shell: bash
       run: |
-        MIN_COVERAGE=${{ inputs.min-coverage }}
+        MIN_COVERAGE=60
         
         OUTPUT=$(./lib/bashunit test 2>&1)
         echo "$OUTPUT"
@@ -35,4 +29,4 @@ runs:
           echo "ERROR: Coverage is below ${MIN_COVERAGE}% (current: ${COVERAGE}%)"
           exit 1
         fi
-        echo "✓ Coverage check passed!"
+        echo "[PASS] Coverage check passed!"
