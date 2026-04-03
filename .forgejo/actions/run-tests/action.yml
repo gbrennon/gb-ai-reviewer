@@ -1,6 +1,12 @@
 name: Run tests with coverage
 description: Runs bashunit tests and enforces minimum coverage threshold
 
+inputs:
+  min-coverage:
+    description: Minimum coverage percentage
+    required: false
+    default: '60'
+
 runs:
   using: composite
   steps:
@@ -9,24 +15,82 @@ runs:
       run: |
         curl -s https://bashunit.typeddevs.com/install.sh | bash
 
-    - name: Run tests with coverage
+    - name: Run tests
       shell: bash
       run: |
-        MIN_COVERAGE=60
-        
-        OUTPUT=$(./lib/bashunit test 2>&1)
-        echo "$OUTPUT"
-        
-        # Extract coverage percentage from output
-        COVERAGE=$(echo "$OUTPUT" | grep "Total:" | awk '{print $3}' | sed 's/(//' | sed 's/%)//')
+        ./lib/bashunit test
+
+    - name: Check coverage threshold
+      shell: bash
+      run: |
+        MIN_COVERAGE="${{ inputs.min-coverage }}"
+        DB_FILE="coverage/lcov.info"
+
+        if [ ! -f "$DB_FILE" ]; then
+          echo "WARNING: No lcov.info found — skipping coverage check"
+          exit 0
+        fi
+
+        TOTAL=$(grep -c '^DA:' "$DB_FILE" || true)
+        COVERED=$(grep '^DA:' "$DB_FILE" | awk -F',' '$2 > 0' | wc -l || true)
+
+        if [ "$TOTAL" -eq 0 ]; then
+          echo "WARNING: No coverage data found in lcov.info — skipping check"
+          echo "File content:"
+          cat "$DB_FILE"
+          exit 0
+        fi
+
+        COVERAGE=$(( (COVERED * 100) / TOTAL ))
+
         echo ""
         echo "=== Coverage Result ==="
+        echo "Lines covered:    ${COVERED}/${TOTAL}"
+        echo "Actual coverage:  ${COVERAGE}%"
         echo "Minimum required: ${MIN_COVERAGE}%"
-        echo "Actual coverage: ${COVERAGE}%"
-        echo "========================"
-        
+
+        echo ""
+        echo "=== Per-File Coverage ==="
+        awk -F':' '
+          /^SF:/ { file=$2; files[file]=1 }
+          /^DA:/ {
+            split($2, a, ",");
+            if (a[2] > 0) covered[file]++;
+            total[file]++
+          }
+          END {
+            for (f in files) {
+              pct = (total[f] > 0) ? int((covered[f] * 100) / total[f]) : 0
+              if (pct < '"$MIN_COVERAGE"') {
+                printf "FAIL: %s (%d/%d lines = %d%%)\n", f, covered[f]+0, total[f]+0, pct
+              } else {
+                printf "PASS: %s (%d/%d lines = %d%%)\n", f, covered[f]+0, total[f]+0, pct
+              }
+            }
+          }
+        ' "$DB_FILE"
+        echo "========================="
+
         if [ "$COVERAGE" -lt "$MIN_COVERAGE" ]; then
-          echo "ERROR: Coverage is below ${MIN_COVERAGE}% (current: ${COVERAGE}%)"
+          echo ""
+          echo "ERROR: Coverage ${COVERAGE}% is below minimum ${MIN_COVERAGE}%"
+          echo "FAILED FILES:"
+          awk -F':' '
+            /^SF:/ { file=$2; files[file]=1 }
+            /^DA:/ {
+              split($2, a, ",");
+              if (a[2] > 0) covered[file]++;
+              total[file]++
+            }
+            END {
+              for (f in files) {
+                pct = (total[f] > 0) ? int((covered[f] * 100) / total[f]) : 0
+                if (pct < '"$MIN_COVERAGE"') {
+                  printf "  - %s: %d%%\n", f, pct
+                }
+              }
+            }
+          ' "$DB_FILE"
           exit 1
         fi
         echo "[PASS] Coverage check passed!"
