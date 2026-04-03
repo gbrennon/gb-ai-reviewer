@@ -1,0 +1,3 @@
+--workflows .forgejo/workflows/
+--container-daemon-socket /run/user/1000/podman/podman.sock
+-P codeberg-small=catthehacker/ubuntu:act-latest
